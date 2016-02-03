@@ -12,7 +12,10 @@ use Gitonomy\Git\Repository;
  */
 class VersionGenerator {
 
-    private $path;
+    /**
+     * @var Repository
+     */
+    private $repo;
 
     /**
      * VersionGenerator constructor.
@@ -20,7 +23,7 @@ class VersionGenerator {
      * @param string $path path to git repository
      */
     public function __construct($path) {
-        $this->path = $path;
+        $this->repo = new Repository($path);
     }
 
     /**
@@ -32,8 +35,7 @@ class VersionGenerator {
      * @return string
      */
     public function version($forthNumber = null, $tag = "") {
-        $repo = new Repository($this->path);
-        $commits = $repo->getLog()->getCommits();
+        $commits = $this->repo->getLog()->getCommits();
         $count = count($commits);
         /** @var Commit $firstCommit */
         $firstCommit = $commits[$count - 1];
@@ -56,5 +58,18 @@ class VersionGenerator {
         }
 
         return $versionString;
+    }
+
+    /**
+     * Mark commit by version tag
+     *
+     * @param string $hash     commit id
+     * @param int $forthNumber @see VersionGenerator::version
+     * @param string $tag
+     */
+    public function markCommit($hash, $forthNumber = null, $tag = "") {
+        $version = 'v'.$this->version($forthNumber, $tag);
+        $this->repo->getReferences()->createTag($version, $hash);
+        $this->repo->run('push', array('origin', $version));
     }
 }
